@@ -16,10 +16,24 @@ def train_and_evaluate(df: pd.DataFrame) -> None:
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    print(f"Confusion Matrix: \n {confusion_matrix(y_test, y_pred)}")
-    print(f"Classification report: \n {classification_report(y_test, y_pred)}")
 
-    joblib.dump(model, "models/rf_predictive_maintenance.joblib")
+    y_probs = model.predict_proba(X_test)[:, 1]
+    threshold=0.50
+    y_pred_tuned = (y_probs >= threshold).astype(int)
+    
+    importances = pd.Series(model.feature_importances_, index=X.columns).sort_values(ascending=False)
+    
+    print(f"Confusion Matrix: \n {confusion_matrix(y_test, y_pred_tuned)}")
+    print(f"Classification report: \n {classification_report(y_test, y_pred_tuned)}")
+    print(f"\nFeature Importances:\n{importances}")
+
+
+    artifact ={
+        "model": model,
+        "threshold": threshold,
+        "features": X.columns.tolist()
+    }
+    joblib.dump(artifact, "models/rf_predictive_maintenance.joblib")
 
 if __name__ == "__main__":
     df = load_and_inspect("data/ai4i2020.csv")
